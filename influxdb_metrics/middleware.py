@@ -4,11 +4,16 @@ import inspect
 import time
 
 from django.conf import settings
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    class MiddlewareMixin(object):
+        pass
 
 from .loader import write_points
 
 
-class InfluxDBRequestMiddleware:
+class InfluxDBRequestMiddleware(MiddlewareMixin):
     """
     Measures request time and sends metric to InfluxDB.
 

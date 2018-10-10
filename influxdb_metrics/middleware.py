@@ -1,34 +1,14 @@
 """Middlewares for the influxdb_metrics app."""
 
-from django import VERSION as DJANGO_VERSION
 import inspect
 import time
-try:
-    from urllib import parse
-except ImportError:
-    import urlparse as parse
 
 from django.conf import settings
-try:
-    from django.utils.deprecation import MiddlewareMixin
-except ImportError:
-    class MiddlewareMixin(object):
-        pass
-
-from tld import get_tld
-from tld.exceptions import TldBadUrl, TldDomainNotFound, TldIOError
 
 from .loader import write_points
 
-if DJANGO_VERSION < (1, 10):
-    def is_user_authenticated(user):
-        return user.is_authenticated()
-else:
-    def is_user_authenticated(user):
-        return user.is_authenticated
 
-
-class InfluxDBRequestMiddleware(MiddlewareMixin):
+class InfluxDBRequestMiddleware:
     """
     Measures request time and sends metric to InfluxDB.
 
@@ -64,34 +44,12 @@ class InfluxDBRequestMiddleware(MiddlewareMixin):
             is_authenticated = False
             is_staff = False
             is_superuser = False
-            if is_user_authenticated(request.user):
+            if request.user.is_authenticated:
                 is_authenticated = True
                 if request.user.is_staff:
                     is_staff = True
                 if request.user.is_superuser:
                     is_superuser = True
-
-            referer = request.META.get('HTTP_REFERER')
-            referer_tld = None
-            referer_tld_string = ''
-            if referer:
-                try:
-                    referer_tld = get_tld(referer, as_object=True)
-                except (TldBadUrl, TldDomainNotFound, TldIOError):
-                    pass
-            if referer_tld:
-                referer_tld_string = referer_tld.tld
-
-            url = request.get_full_path()
-            url_query = parse.parse_qs(parse.urlparse(url).query)
-
-            # This allows you to measure click rates for ad-campaigns, just
-            # make sure that your ads have `?campaign=something` in the URL
-            campaign_keyword = getattr(
-                settings, 'INFLUXDB_METRICS_CAMPAIGN_KEYWORD', 'campaign')
-            campaign = ''
-            if campaign_keyword in url_query:
-                campaign = url_query[campaign_keyword][0]
 
             data = [{
                 'measurement': 'django_request',
@@ -104,11 +62,6 @@ class InfluxDBRequestMiddleware(MiddlewareMixin):
                     'method': request.method,
                     'module': request._view_module,
                     'view': request._view_name,
-                    'referer': referer,
-                    'referer_tld': referer_tld_string,
-                    'full_path': url,
-                    'path': request.path,
-                    'campaign': campaign,
                 },
                 'fields': {'value': ms, },
             }]

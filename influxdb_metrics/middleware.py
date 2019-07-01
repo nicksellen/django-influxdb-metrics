@@ -56,6 +56,10 @@ class InfluxDBRequestMiddleware(MiddlewareMixin):
                 if request.user.is_superuser:
                     is_superuser = True
 
+
+            resolver_match = request.resolver_match
+            view_name = resolver_match.view_name
+
             data = [{
                 'measurement': 'django_request',
                 'tags': {
@@ -67,7 +71,11 @@ class InfluxDBRequestMiddleware(MiddlewareMixin):
                     'method': request.method,
                     'module': request._view_module,
                     'view': request._view_name,
+                    'view_name': view_name,
                 },
-                'fields': {'value': ms, },
+                'fields': {
+                    'value': ms,
+                    'url': request.get_full_path(),
+                },
             }]
             write_points(data)

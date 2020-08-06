@@ -34,7 +34,7 @@ import influxdb_metrics as app
 
 install_requires = [
     'django>=1.6',
-    'influxdb>=2.9.1',
+    'influxdb @ git+https://github.com/influxdata/influxdb-python@cc41e290f690c4eb67f75c98fa9f027bdb6eb16b#egg=influxdb'
     'tld',
     'python-server-metrics>=0.1.9',
 ]
